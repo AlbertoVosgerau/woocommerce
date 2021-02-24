@@ -229,7 +229,7 @@ class WooCommerce {
   Future<int> fetchLoggedInUserId() async {
     _authToken = await _localDbService.getSecurityToken();
     _urlHeader['Authorization'] = 'Bearer ' + _authToken;
-    _urlHeader['X-WP-Nonce'] = Nonce.generate();
+    _urlHeader['X-WP-Nonce'] = Nonce.generate(10);
     final response =
         await http.get(this.baseUrl + URL_USER_ME, headers: _urlHeader);
 
