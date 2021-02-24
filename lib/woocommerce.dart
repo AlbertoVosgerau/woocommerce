@@ -45,7 +45,6 @@ import "dart:math";
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:nonce/nonce.dart';
 import 'package:woocommerce/models/customer_download.dart';
 import 'package:woocommerce/models/payment_gateway.dart';
 import 'package:woocommerce/models/shipping_zone_method.dart';
@@ -163,7 +162,10 @@ class WooCommerce {
   String get apiResourceUrl => queryUri.toString();
 
   // Header to be sent for JWT authourization
-  Map<String, String> _urlHeader = {'Authorization': '', 'X-WP-Nonce': ''};
+  Map<String, String> _urlHeader = {
+    'Authorization': '',
+    'X-WC-Store-API-Nonce': ''
+  };
   String get urlHeader => _urlHeader['Authorization'] = 'Bearer ' + authToken;
   LocalDatabaseService _localDbService = LocalDatabaseService();
 
@@ -229,7 +231,6 @@ class WooCommerce {
   Future<int> fetchLoggedInUserId() async {
     _authToken = await _localDbService.getSecurityToken();
     _urlHeader['Authorization'] = 'Bearer ' + _authToken;
-    _urlHeader['X-WP-Nonce'] = Nonce.generate(10);
     final response =
         await http.get(this.baseUrl + URL_USER_ME, headers: _urlHeader);
 
@@ -1016,7 +1017,17 @@ class WooCommerce {
     };
     if (variations != null) data['variations'] = variations;
     await getAuthTokenFromDb();
+
+    Random rand = Random();
+    List<int> codeUnits = List.generate(10, (index) {
+      return rand.nextInt(26) + 97;
+    });
+
+    /// Random string uniquely generated to identify each signed request
+    String nonce = String.fromCharCodes(codeUnits);
+
     _urlHeader['Authorization'] = 'Bearer ' + _authToken;
+    _urlHeader['X-WC-Store-API-Nonce'] = nonce;
     final response = await http.post(
         this.baseUrl + URL_STORE_API_PATH + 'cart/items',
         headers: _urlHeader,
